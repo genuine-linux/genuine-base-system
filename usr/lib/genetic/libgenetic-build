@@ -413,14 +413,13 @@ gen_build_binary_package() {
 	BINFILE_DIR="$($DIRNAME "$binfile" | $SED 's/^\///' | $SED 's/\//\\\//g')";
 	BINFILETGT="$($ECHO "$binfile" | $SED 's/'$BINFILE_DIR'//g' | $SED 's/\///g')";
 	BINFILE="$($ECHO "$BINFILETGT" | $SED 's/'$GENUINE_TGT-'//g')";
-	$CD $BINFILE_DIR &&
+	($CD $BINFILE_DIR &&
 	if [ ! -f "$BINFILE" ]; then
 		if [ ! -s "$BINFILE" ]; then
   			echolog_debug "$DEBUG Linking binary file '$BINFILE_DIR/$BINFILETGT' to '$BINFILE_DIR/$BINFILE' ...";
 			$LN -sf $BINFILETGT $BINFILE;
 		fi;
-	fi;
-	$CD -;
+	fi;)
   done
 
 	  # $RM ../$name.target.bin.files ../$name.target.sbin.files;

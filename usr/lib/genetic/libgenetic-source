@@ -289,11 +289,11 @@ gen_source_package() {
 		$CD $GENETIC_TMP/$package_name-$package_version/$package_name-$package_version;
 
 		# setup.py #
-		$PYTHON setup.py &> ../$package_name.src-setup.py-$BUILDLOG;
+		$PYTHON setup.py build &> ../$package_name.src-setup.py-$BUILDLOG;
 		stop_spinner $?
 	fi
 
-	# If package is a Python Module with "setup.py" #
+	# If package uses Meson build system #
   	if test -f "$package_name-$package_version/meson.build"; then
 		### Start for each 'package_to_generate' create '@PACKAGE' source files ###
 		start_spinner "Running '${color_wht}meson${color_reset}' attempting to create '${color_wht}Makefile${color_reset}'";
@@ -465,6 +465,7 @@ if test -f \"setup.py\"; then
 	echo \" --- Install <\$name (\$version)> ---\";
 	$PYTHON setup.py install --optimize=1 --root=dest;
 	cp -av dest/*  \${GENPKG$GEN_PKGRULES_VARPREFIX}
+	#cp -av ../\$name/files/* \${GENPKG$GEN_PKGRULES_VARPREFIX}/
 fi;
 " >> $GENETIC_TMP/$package_name-$package_version/$package_to_generate/Rules
 fi;
@@ -484,6 +485,7 @@ mkdir -pv \${GENPKG$GEN_PKGRULES_VARPREFIX};
 if test -f \"build.ninja\"; then
 	echo \" --- Ninja Install <\$name (\$version)> ---\";
 	$GEN_PKGRULES_VARPREFIX=\${GENPKG$GEN_PKGRULES_VARPREFIX} $NINJA install;
+	#cp -av ../\$name/files/* \${GENPKG$GEN_PKGRULES_VARPREFIX}/
 fi;
 " >> $GENETIC_TMP/$package_name-$package_version/$package_to_generate/Rules
 fi;
@@ -503,6 +505,7 @@ mkdir -pv \${GENPKG$GEN_PKGRULES_VARPREFIX};
 if test -f \"Makefile\" || test -f \"makefile\"; then
 	echo \" --- Make Install <\$name (\$version)> ---\";
 	$MAKE $GEN_MAKE_OPTS $GEN_PKGRULES_VARPREFIX=\${GENPKG$GEN_PKGRULES_VARPREFIX} install;
+	#cp -av ../\$name/files/* \${GENPKG$GEN_PKGRULES_VARPREFIX}/
 fi;
 " >> $GENETIC_TMP/$package_name-$package_version/$package_to_generate/Rules
 fi;
@@ -515,12 +518,12 @@ fi;
 original_name=$package_name
 name=$package_to_generate
 version=$package_version
-package=\$name-\$version
+package=$package_name-$package_version
 category=
 depends=
 installbefore=
 installafter=
-replaces=\"\$name\"
+replaces=\"$package_name $package_name.dbg\"
 " > $GENETIC_TMP/$package_name-$package_version/$package_to_generate/Info;
 		### End '$package_name' 'Info' file ###
 

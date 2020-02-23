@@ -695,16 +695,33 @@ gen_install_binary_package() {
 		echolog "$WARNING Warning! Package '${color_wht}$Package${color_reset}' is already installed!";
 		echolog "$WARNING Warning! Reinstall '${color_wht}$Package${color_reset}' using replacement '${color_wht}$Package $Version${color_reset}'!";
 
-		# If updated package is linux then keep old files #
-		if test "$Package" == "linux"; then
-			echolog "$WARNING Warning! Old kernel package files will not be overwritten!";
-		else
-			# Delete old stored package data #
-			gen_uninstall_packages "$Package";
-		fi;
+                # If updated package is linux then keep old files #
+                case $Package in
+                        linux)  # CRITICAL KERNEL PACKAGE #
+                                echolog "$WARNING Warning! Package $Package kernel package files ${color_bwht}SHOULD NOT${color_reset} be overwritten!";
+                                echolog "$ERROR Error! ${color_ured}!!!Package $Package kernel package must manually uninstalled using: genetic -u linux!!!${color_reset}";
+                                # Close genetic instance #
+                                exit_instance $true;
+                        ;;
+                        glibc|ncurses) # CRITICAL BASE PACKAGES #
+                                echolog "$WARNING Warning! Package $Package files will be directly overwritten but not uninstalled!";
+                                echolog "$WARNING Warning! ${color_ured}!!!You must reboot your system after installing $Package!!!${color_reset}";
+                        ;;
+                        *) # NOT CRITICAL PACKAGES #
+                                # Delete old stored package data #
+                                gen_uninstall_packages "$Package";
+                        ;;
+                esac;
 	fi;
 
 	# Rename data directory to '$CACHEDIR/$Package' #
+	if [ -d "$CACHEDIR/$Package" ]; then
+		if [ -d "$CACHEDIR/$Package.old" ]; then
+			$RM -rf $CACHEDIR/$Package.old
+		fi;
+                echolog "$WARNING Warning! Package $Package genetic cache files are being directly overwritten but not uninstalled!";
+		$MV $CACHEDIR/$Package $CACHEDIR/$Package.old
+	fi
 	$MV $CACHEDIR/$PACKAGE $CACHEDIR/$Package;
 	$CD $CACHEDIR/$Package;
 
