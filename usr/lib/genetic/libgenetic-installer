@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# genetic-20.x.x (libgenetic-installer) #
+
+# Copyright (c) 2014-2020 Antonio Cao (@burzumishi) #
+
+# This is free software;
+# You have unlimited permission to copy and/or distribute it,
+# with or without modifications, as long as this notice is preserved.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY, to the extent permitted by law; without
+# even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+# PARTICULAR PURPOSE.
+
+# libgenetic-installer: Package Manager Installer functions and definitions #
+
+# gen_install_packages($package_name-version.*.gen): Install 'genetic' '.gen' packages #
+gen_install_packages() {
+	# Parameters: $PACKAGE_PATHS #
+	PACKAGE_PATHS="$1"; shift;
+
+	for PACKAGE_PATH in $PACKAGE_PATHS; do
+
+		echolog_debug "$DEBUG ================== %%% genetic %%% ==================";
+		echolog_debug "$DEBUG Starting 'gen_install_package($PACKAGE_PATH)'!";
+		echolog_debug "$DEBUG =====================================================";
+
+		# Define '$PACKAGE' to be installed #
+		PACKAGE=$($ECHO $PACKAGE_PATH | $AWK -F"/" '{print $NF}');
+
+		# Check package file '$PACKAGE_PATH' #
+		package_check "$PACKAGE_PATH"
+		
+	done;
+}

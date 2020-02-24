@@ -89,6 +89,7 @@ load_core_variables() {
 	GETOPTS="getopts";
 	GETTEXT="gettext";
   	XGETTEXT="xgettext";
+  	ZENITY="zenity";
   	if [ -f "/usr/bin/perl" ]; then
 		PERL="/usr/bin/perl";
 	else

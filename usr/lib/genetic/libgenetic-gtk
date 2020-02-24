@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# genetic-19.x.x (libgenetic-repo) #
+# genetic-20.x.x (libgenetic-gtk) #
 
 # Copyright (c) 2014-2020 Antonio Cao (@burzumishi) #
 
@@ -13,3 +13,38 @@
 # even the implied warranty of MERCHANTABILITY or FITNESS FOR A
 # PARTICULAR PURPOSE.
 
+# libgenetic-gtk: Package Manager Zenity functions and definitions #
+
+# gen_check_zenity(): Check if Zenity is available #
+gen_check_zenity() {
+	# Parameters: none #
+
+	echolog_debug "$DEBUG ================== %%% genetic %%% ==================";
+	echolog_debug "$DEBUG Starting 'gen_check_zenity($ZENITY)'!";
+	echolog_debug "$DEBUG =====================================================";
+
+	ZENITY_AVAILABLE="$(which $ZENITY)";
+	ZENITY_PATH="$(dirname $ZENITY_AVAILABLE)";
+
+	if $ZENITY_PATH/$ZENITY --help &>/dev/null; then
+		return $true;
+	else
+		return $false;
+	fi
+}
+
+# genzenlist() {
+genzenlist() {
+	GENZENLIST=$($ZENITY --list \
+	  --title="Choose the Bugs You Wish to View" \
+	  --column="Número de erro" --column="Importancia" --column="Descrición" \
+    992383 Normal "GtkTreeView ten erros cando hai múltiples seleccións" \
+    293823 High "GNOME Dictionary non xestiona o proxy" \
+    393823 Critical "A edición de menú non funciona en GNOME 2.0")
+}
+
+gen_progress() {
+	$ZENITY --info --title="Demo Progress Script" --text="This script shows how Zenity creates a progress bar."
+	$FIND /usr | $ZENITY --progress --pulsate --auto-close --auto-kill --text="Working..."
+	$ZENITY --info --title="Job complete" --text="The demo script is now complete."
+}
