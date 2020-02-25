@@ -1,11 +1,4 @@
 # genuine-base-system Makefile
-# Copyright 2006-2011 Gentoo Foundation
-# Distributed under the terms of the GNU General Public License v2
-#
-# We've moved the installation logic from Gentoo ebuild into a generic
-# Makefile so that the ebuild is much smaller and more simple.
-# It also has the added bonus of being easier to install on systems
-# without an ebuild style package manager.
 
 PKG_VERSION = G20.02.02
 PKG = genuine-base-system-$(PKG_VERSION)
