@@ -15,22 +15,84 @@
 
 # libgenetic-installer: Package Manager Installer functions and definitions #
 
-# gen_install_packages($package_name-version.*.gen): Install 'genetic' '.gen' packages #
-gen_install_packages() {
-	# Parameters: $PACKAGE_PATHS #
-	PACKAGE_PATHS="$1"; shift;
+# gen_installer(): Install Genuine Distribution #
+gen_installer() {
+	# Parameters: none #
 
-	for PACKAGE_PATH in $PACKAGE_PATHS; do
+	echolog_debug "$DEBUG ================== %%% genetic %%% ==================";
+	echolog_debug "$DEBUG Starting 'gen_installer()'!";
+	echolog_debug "$DEBUG =====================================================";
 
-		echolog_debug "$DEBUG ================== %%% genetic %%% ==================";
-		echolog_debug "$DEBUG Starting 'gen_install_package($PACKAGE_PATH)'!";
-		echolog_debug "$DEBUG =====================================================";
+	if gen_check_zenity; then
+		echolog_debug "$ERROR $ZENITY was found in your system!";
+		echolog "$WARNING Genuine Installer Main Menu";
 
-		# Define '$PACKAGE' to be installed #
-		PACKAGE=$($ECHO $PACKAGE_PATH | $AWK -F"/" '{print $NF}');
+		# ZENITY WINDOW SIZE
+		_ZW=500; # Window width
+		_ZH=400; # Window height	
+		_ZENITY_WINDOW_SIZE="--width=$_ZW --height=$_ZH";
 
-		# Check package file '$PACKAGE_PATH' #
-		package_check "$PACKAGE_PATH"
+		gen_installer_options=$($ZENITY --list \
+			$_ZENITY_WINDOW_SIZE \
+			--title="Genuine GNU/Linux Installer Menu" \
+			--column="Genuine Installer Options" \
+			--text="Welcome to Genuine GNU/Linux Installer\n\nThis installer will guide you with all the steps of this proccess.\nPlease, BE CAREFUL because you can delete all your hard drives' data!\n" \
+			"Select Language" \
+			"Manage Disk Partitions" \
+			"Install Genuine GNU/Linux" \
+			"Install GRUB Bootloader" \
+			"Administrator Password" \
+			"System Users" \
+			"Date & Timezone" \
+			"Hostname" \
+			"Reboot" \
+			--ok-label="Exit Installer" \
+			--cancel-label="Cancel Installer" \
+			--modal --hide-header);
 		
-	done;
+		if [[ $? -ne 0 ]]; then
+			echolog "$INFO Genuine Installer cancelled by user!";
+			exit_instance $false;
+		fi;
+
+		if [ "$gen_installer_options" == "Select Language" ]; then
+    			gen_zenity_select_locale;
+		fi
+
+		if [ "$gen_installer_options" == "Manage Disk Partitions" ]; then
+    			gen_zenity_partition_manager;
+		fi
+
+		if [ "$gen_installer_options" == "Install Genuine GNU/Linux" ]; then
+    			gen_zenity_install_system;
+		fi
+		
+		if [ "$gen_installer_options" == "Install GRUB Bootloader" ]; then
+    			gen_zenity_install_grub;
+		fi
+		
+		if [ "$gen_installer_options" == "Administrator Password" ]; then
+			gen_zenity_root_passwd;
+		fi
+	
+		if [ "$gen_installer_options" == "System Users" ]; then
+    			gen_zenity_create_user;
+		fi
+
+		if [ "$gen_installer_options" == "Date & Timezone" ]; then
+    			gen_zenity_set_datetime;
+		fi
+		
+		if [ "$gen_installer_options" == "Hostname" ]; then
+    			gen_zenity_set_hostname;
+		fi
+
+		if [ "$gen_installer_options" == "Reboot" ]; then
+    			gen_zenity_reboot;
+		fi
+	else
+		echolog_debug "$ERROR $ZENITY was NOT found in your system!";
+		echolog "$ERROR Genuine Installer cannot be started!";
+		exit_instance $false;
+	fi
 }

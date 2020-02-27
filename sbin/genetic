@@ -65,6 +65,9 @@ source $GENETIC_LIB/libgenetic-bootstrap;
 # Load genetic GTK GUI (zenity) #
 source $GENETIC_LIB/libgenetic-gtk;
 
+# Load genetic Installer #
+source $GENETIC_LIB/libgenetic-installer;
+
 # Start 'genetic' #
 
 main "$@";

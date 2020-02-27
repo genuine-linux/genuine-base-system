@@ -669,6 +669,12 @@ gen_install_binary_package() {
 	# Select binary package to be installed #
 	echolog "$INFO Selecting binary package '${color_wht}$PACKAGE${color_reset}' to be installed.";
 
+	if test "$INSTDIR" != "/"; then # If --instdir is used, change CACHEDIR value
+		echolog_debug "$WARNING Warning! Changing genetic CACHEDIR to $INSTDIR$CACHEDIR!";
+		echolog "$WARNING Warning! Changing genetic CACHEDIR to $INSTDIR$CACHEDIR!";
+		CACHEDIR="$INSTDIR$CACHEDIR";
+	fi;
+
 	# Initialize '$CACHEDIR/$PACKAGE' data directory #
 	echolog_debug_verbose "$DEBUG Create '$CACHEDIR/$PACKAGE' directory to store '$PACKAGE' data files."
 	check_dir "$CACHEDIR/$PACKAGE" "$RM -rf $CACHEDIR/$PACKAGE";
@@ -690,14 +696,15 @@ gen_install_binary_package() {
 
 	### UNINSTALL previous versions ###
 	# Check if '$Package' data directory "$CACHEDIR/$Package" or "$CACHEDIR/$Package.dbg" exists #
-	if test -d "$CACHEDIR/$Package" || test -d "$CACHEDIR/$Package.dbg"; then
-		# If true package is installed #
-		echolog "$WARNING Warning! Package '${color_wht}$Package${color_reset}' is already installed!";
-		echolog "$WARNING Warning! Reinstall '${color_wht}$Package${color_reset}' using replacement '${color_wht}$Package $Version${color_reset}'!";
+	if test "$INSTDIR" == "/"; then # If --instdir is used, do not uninstall packages from database
+		if test -d "$CACHEDIR/$Package" || test -d "$CACHEDIR/$Package.dbg"; then
+			# If true package is installed #
+			echolog "$WARNING Warning! Package '${color_wht}$Package${color_reset}' is already installed!";
+			echolog "$WARNING Warning! Reinstall '${color_wht}$Package${color_reset}' using replacement '${color_wht}$Package $Version${color_reset}'!";
 
-                # If updated package is linux then keep old files #
-                case $Package in
-                        linux)  # CRITICAL KERNEL PACKAGE #
+               		# If updated package is linux then keep old files #
+               	 	case $Package in
+               	        linux)  # CRITICAL KERNEL PACKAGE #
                                 echolog "$WARNING Warning! Package $Package kernel package files ${color_bwht}SHOULD NOT${color_reset} be overwritten!";
                                 echolog "$ERROR Error! ${color_ured}!!!Package $Package kernel package must manually uninstalled using: genetic -u linux!!!${color_reset}";
                                 # Close genetic instance #
@@ -711,7 +718,11 @@ gen_install_binary_package() {
                                 # Delete old stored package data #
                                 gen_uninstall_packages "$Package";
                         ;;
-                esac;
+                	esac;
+		fi;
+	else
+		echolog_debug "$WARNING Warning! Option [--instdir] was selected! Package $Package will not be removed!";
+		echolog "$WARNING Warning! Option [--instdir] was selected! Package $Package will not be removed!";
 	fi;
 
 	# Rename data directory to '$CACHEDIR/$Package' #
@@ -736,7 +747,11 @@ gen_install_binary_package() {
 	check_package_arch "$Package" "$Version" "$Arch";
 
 	# Start work_spinner #
-	start_spinner "Installing '${color_wht}$Package $Version${color_reset}' (${color_wht}$Arch${color_reset})";
+	if test "$INSTDIR" == "/"; then
+		start_spinner "Installing '${color_wht}$Package $Version${color_reset}' (${color_wht}$Arch${color_reset})";
+	else
+		start_spinner "Installing '${color_wht}$Package $Version${color_reset}' (${color_wht}$Arch${color_reset}) to: $INSTDIR";
+	fi
 
 	# Check dependencies from 'Info' file.
 	gen_check_package_depends "$CACHEDIR/$Package/Info";

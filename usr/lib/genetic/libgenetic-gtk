@@ -23,8 +23,8 @@ gen_check_zenity() {
 	echolog_debug "$DEBUG Starting 'gen_check_zenity($ZENITY)'!";
 	echolog_debug "$DEBUG =====================================================";
 
-	ZENITY_AVAILABLE="$(which $ZENITY)";
-	ZENITY_PATH="$(dirname $ZENITY_AVAILABLE)";
+	ZENITY_AVAILABLE="$($WHICH $ZENITY)";
+	ZENITY_PATH="$($DIRNAME $ZENITY_AVAILABLE)";
 
 	if $ZENITY_PATH/$ZENITY --help &>/dev/null; then
 		return $true;
@@ -33,18 +33,322 @@ gen_check_zenity() {
 	fi
 }
 
-# genzenlist() {
-genzenlist() {
-	GENZENLIST=$($ZENITY --list \
-	  --title="Choose the Bugs You Wish to View" \
-	  --column="Número de erro" --column="Importancia" --column="Descrición" \
-    992383 Normal "GtkTreeView ten erros cando hai múltiples seleccións" \
-    293823 High "GNOME Dictionary non xestiona o proxy" \
-    393823 Critical "A edición de menú non funciona en GNOME 2.0")
+gen_zenity_cancelled_by_user() {
+	ACTION="$1"; shift;
+        echolog "$ERROR $ACTION: Cancelled by user!";
+        $ZENITY --error --ellipsize --text="ERROR! $ACTION: Cancelled by user!";
+        ## Cancelled, return to installer main menu #
+        gen_installer;
 }
 
-gen_progress() {
-	$ZENITY --info --title="Demo Progress Script" --text="This script shows how Zenity creates a progress bar."
-	$FIND /usr | $ZENITY --progress --pulsate --auto-close --auto-kill --text="Working..."
-	$ZENITY --info --title="Job complete" --text="The demo script is now complete."
+gen_zenity_progress() {
+	PROGRESS_CMD="$1"; shift;
+	PROGRESS_TXT="$2"; shift;
+	$PROGRESS_CMD | $ZENITY --progress --pulsate --auto-close --auto-kill --text="$PROGRESS_TXT, please wait ..."
 }
+
+# gen_zenity_list_disks() {
+gen_zenity_select_disk() {
+	SELECT_DISK=$($ZENITY --list \
+	  $_ZENITY_WINDOW_SIZE \
+	  --title="Select a Hard Drive" \
+	  --column="Drive" --column="Size" \
+	  $($LSBLK | $GREP disk | $AWK '{print "/dev/"$1" "$4}') || gen_installer);
+}
+
+gen_zenity_install_grub() {
+	gen_zenity_select_disk
+	GRUB_DISK="$($ECHO $SELECT_DISK | $AWK '{print $1}')";
+	echolog "$INFO You have selected $GRUB_DISK to install GRUB bootloader!";
+	$ZENITY --info --ellipsize --text "You have selected $GRUB_DISK to install GRUB bootloader";
+	gen_zenity_progress "$GRUB_INSTALL $GRUB_DISK" "Installing GRUB to $SELECT_DISK";
+	gen_installer;
+}
+
+gen_zenity_partition_manager() {
+	gen_zenity_select_disk
+	
+	PARTITION_DISK="$($ECHO $SELECT_DISK | $AWK '{print $1}')";
+
+	echolog "$INFO You have selected $PARTITION_DISK to install Genuine GNU/Linux!";
+	$ZENITY --info --ellipsize --text "You have selected $PARTITION_DISK to install Genuine GNU/Linux";
+
+	# Disk size (using sectors)
+	_BS=2048;
+	_PGS=2049; # partition gap size
+	_DISK_SIZE=$($FDISK -l $PARTITION_DISK | $HEAD -1 | $AWK '{print $7}');
+
+	# Partition layout
+	_BOOT="${PARTITION_DISK}1";
+	_BOOT_PATH="/boot";
+	_BOOT_FS="ext2";
+	
+	_ROOT="${PARTITION_DISK}2";
+	_ROOT_PATH="/";
+	_ROOT_FS="ext4";
+
+	_SWAP="${PARTITION_DISK}3";
+	_SWAP_PATH="<swp>";
+	_SWAP_FS="swap";
+
+	# GUESS _ROOT_SIZE: TOTAL DISK SIZE - BOOT SIZE - SWAP SIZE = ROOT SIZE
+	_BOOT_SIZE=4012032;
+	_SWAP_SIZE=4093952;
+	_ROOT_SIZE=$($ECHO ${_DISK_SIZE}-${_BOOT_SIZE}-${_SWAP_SIZE} | $BC)
+
+	# GUESS _SWAP_START: ROOT START + PARTITION GAP SECTOR (2049) = SWAP START
+	_BOOT_START=2048;
+	_ROOT_START=4014080;
+	_SWAP_START=$($ECHO ${_ROOT_SIZE}+${_PGS} | $BC);
+
+	# SIZE Mb
+	_BOOT_SIZE_MB=$($ECHO ${_BOOT_SIZE}/${_BS} | $BC);
+	_ROOT_SIZE_MB=$($ECHO ${_ROOT_SIZE}/${_BS} | $BC);
+	_SWAP_SIZE_MB=$($ECHO ${_SWAP_SIZE}/${_BS} | $BC);
+
+	# Write SFDISK partition layout
+	echolog "$WARNING Creating $PARTITION_DISK partition layout!";
+	SFDISK_PARTITIONS="$TMPDIR/sfdisk.partitions";
+
+	$ECHO "start=   ${_BOOT_START}, size=   ${_BOOT_SIZE}, type=83
+start=   ${_ROOT_START}, size=   ${_ROOT_SIZE}, type=83
+start=   ${_SWAP_START}, size=   ${_SWAP_SIZE}, type=82" > $SFDISK_PARTITIONS
+
+	if [ -f "$SFDISK_PARTITIONS" ]; then
+		# Apply SFDISK partition layout
+		echolog_debug "$WARNING You have selected $PARTITION_DISK to install Genuine GNU/Linux! WARNING!! All disk data will be removed!!!";
+		$ZENITY --question --ellipsize \
+			$_ZENITY_WINDOW_SIZE \
+			--text "Partition Layout:\n\n$($CAT $SFDISK_PARTITIONS)\n\n\nPartitions Size:\n\n${_BOOT} ${_BOOT_PATH} ${_BOOT_SIZE_MB}\n${_ROOT} ${_ROOT_PATH}      ${_ROOT_SIZE_MB}\n${_SWAP} ${_SWAP_PATH} ${_SWAP_SIZE_MB}\n\n\nWARNING!!! Are you sure that do you want to use $PARTITION_DISK?\nWARNING!!! All data from disk will be removed!!!";
+       		 if [[ $? -eq 0 ]]; then
+	       	        $ZENITY --info --ellipsize --text "WARNING! All data from disk $PARTITION_DISK will be removed NOW!";
+			echolog "$WARNING All data from disk $PARTITION_DISK will be removed";
+
+			$SFDISK ${PARTITION_DISK} < $TMPDIR/$SFDISK_PARTITIONS;
+
+			if [[ $? -eq $true ]]; then
+				$ZENITY --info --ellipsize --text "INFO! Disk $PARTITION_DISK was sucessfully partitioned! You can continue with your Genuine GNU/Linux installation NOW!";	
+				echolog "$INFO Selecting $PARTITION_DISK as Genuine GNU/Linux install target.";
+				$ECHO "$PARTITION_DISK" > $TMPDIR/install.target.disk
+			else
+				$ZENITY --info --ellipsize --text "WARNING! Disk $PARTITION_DISK can't be partitioned! Please, check system installation logs!";	
+				echolog "$WARNING Disk $PARTITION_DISK can't be partitioned! Please, check system installation logs!";
+			fi
+		else
+       	        	gen_zenity_cancelled_by_user "Create Partition Layout";
+       	 	fi
+	 	$ZENITY --info --ellipsize --text "ERROR! Can't create $PARTITION_DISK partition layout! Please, check system installation logs!";
+	 	echolog "$ERROR Can't create $PARTITION_DISK partition layout! Please, check system installation logs!";
+	fi
+
+	gen_installer;
+}
+
+
+gen_zenity_select_keymap() {
+	echolog "$INFO Select your keyboard map!";
+	KEYMAPS="$($LS /usr/share/keymaps/i386/qwerty | $SED 's/\.map\.gz//g' | $SORT | $UNIQ)";
+	SELECT_KEYMAP=$($ZENITY --list \
+		$_ZENITY_WINDOW_SIZE \
+		--title="Select your keyboard map! (Only i386/QWERTY keyboards are listed)" \
+		--column="Available Keyboard Maps" \
+		$(for keymap in $KEYMAPS; do $ECHO "$keymap"; done) || gen_installer);
+
+	echolog "$WARNING Selected keymap is: $SELECT_KEYMAP";
+
+	$LOADKEYS $SELECT_KEYMAP;
+
+	gen_installer;
+}
+
+gen_zenity_select_locale() {
+	echolog "$INFO Select your region language";
+	LANGUAGES="$($LOCALE -a)";
+	SELECT_LOCALE=$($ZENITY --list \
+		$_ZENITY_WINDOW_SIZE \
+		--title="Select your region language" \
+		--column="Available Languages" \
+		$(for lang in $LANGUAGES; do $ECHO "$lang" | $SED 's/\./-/g' | $SED 's/utf/UTF/g'; done) || gen_installer);
+
+	echolog "$WARNING Selected language is: $SELECT_LOCALE";
+
+	$ECHO "# Set up i18n variables\nexport LANG=$SELECT_LOCALE" > /etc/profile.d/i18n.sh
+
+	gen_zenity_select_keymap;
+	gen_installer;
+}
+
+gen_zenity_install_system() {
+	echolog "$INFO You have selected to install Genuine GNU/Linux!";
+	gen_installer;
+}
+
+gen_zenity_set_hostname() {
+	echolog "$INFO Set a hostname for your Genuine box";
+	_hostname=$($ZENITY --title="Set a hostname for your Genuine box." --entry --text "Please choose a hostname for your Genuine installation.\n\nIt should only contain letters, numbers and dashes, no spaces." --entry-text "Hostname")
+
+	echolog "$WARNING Selected hostname is: $_hostname";
+
+	$ECHO "# Set to the hostname of this machine\nhostname=$_hostname"> /etc/conf.d/hostname
+	$ECHO "127.0.0.1 localhost.localdomain localhost $_hostname" > /etc/hosts
+
+	$_HOSTNAME $_hostname &/dev/null;
+
+	gen_installer;
+}
+
+gen_zenity_set_datetime() {
+	echolog "$INFO Select your Timezone";
+	area=$($ZENITY --list \
+		$_ZENITY_WINDOW_SIZE \
+		--title "Select your Timezone" \
+		--text="Please select your country region." \
+		--column="Select your country region" \
+		--print-column=1 "Africa" "America" "Asia" "Australia" "Europe" "Pacific");
+	
+	timezone=$($LS -1 /usr/share/zoneinfo/$area | \
+		$ZENITY --list \
+		$_ZENITY_WINDOW_SIZE \
+		--title="Select your closest location" \
+		--column "Closest Location" \
+		--text "Please select the location closest to you");
+
+	echolog "$INFO Selected Timezone: $timezone";
+
+	$RM /etc/localtime && $LN -s /usr/share/zoneinfo/$area/$timezone /etc/localtime
+
+	# Make sure we clean up any leading zeros in the day (as Zenity freaks out)
+	date_d=`$DATE +%d | $SED 's/^0//'`
+	date_m=`$DATE +%m | $SED 's/^0//'`
+	date_y=`$DATE +%Y`
+
+	date=$($ZENITY --calendar \
+		$_ZENITY_WINDOW_SIZE \
+		--text="Please select the current date" \
+		--title "Please select the current date" \
+		--day=$date_d \
+		--month=$date_m \
+		--year=$date_y \
+		--date-format="%Y%m%d");
+
+	echolog_debug "$INFO Selected Date is: $date";
+
+	time_h=`$DATE +%H`
+	time_m=`$DATE +%M`
+
+	time=$($ZENITY --title="Enter actual time" --entry --text "Please enter the time in 24hour format (HH:MM):" --entry-text "$time_h:$time_m");
+
+	while ! $DATE -d $time ; do
+		time=$($ZENITY --title="Enter actual time" --entry --text "Please enter the time in 24hour format (HH:MM):" --entry-text "$time_h:$time_m");
+	done
+
+	_SET_DATE=$($DATE +%Y%m%d -s $date);
+	_SET_TIME=$($DATE +%H:%M -s $time);
+
+	echolog "$WARNING Selected date is: $_SET_DATE";
+	echolog "$WARNING Selected time is: $_SET_TIME";
+
+	gen_installer;
+}
+
+gen_zenity_root_passwd() {
+	echolog "$INFO Setup root password";
+	ROOT_PASSWD=$($ZENITY --forms \
+	 $_ZENITY_WINDOW_SIZE \
+         --title="Setup root password" \
+         --text="Fill fields with your new root password." \
+         --add-password="Password" \
+         --add-password="Confirm Password" \
+	 --separator="|");
+
+	if [ "$ROOT_PASSWD" != "" ]; then
+		ROOT_PASSWD1=$($ECHO "$USER_DATA" | $AWK -F"|" '{print $1}' | $MD5SUM | $AWK '{print $1}');
+		ROOT_PASSWD2=$($ECHO "$USER_DATA" | $AWK -F"|" '{print $2}' | $MD5SUM | $AWK '{print $1}');
+
+		if [ "$ROOT_PASSWD1" == "$ROOT_PASSWD2" ]; then
+			echolog_debug "$DEBUG Create new user with form data: $USER_DATA";
+			
+			ROOT_PASSWD_CMD_CHECK=`($ECHO "$ROOT_PASSWD1"; $ECHO "$ROOT_PASSWD2") | $PASSWD`;
+
+			if [[ $ROOT_PASSWD_CMD_CHECK -eq $true ]]; then
+				echolog "$INFO Setup root password: Your root password has been updated!";
+				$ZENITY --info --ellipsize --text "Setup root password: Your root password has been updated!";
+				return $true;
+			else
+				echolog "$INFO Setup root password: Your root password has NOT been updated!";
+				$ZENITY --info --ellipsize --text "Setup root password: Your root password has NOT been updated!";
+				return $false;
+			fi
+		else
+			echolog "$ERROR Create user $USER_NAME: Passwords does NOT match!";
+			$ZENITY --error --ellipsize --text="Setup root password: Passwords does NOT match!";
+			gen_zenity_create_user;
+		fi
+	else
+		gen_zenity_cancelled_by_user "Setup root password";
+	fi
+}
+
+gen_zenity_create_user() {
+	echolog "$DEBUG Create new users!";
+	USER_DATA=$($ZENITY --forms \
+	 $_ZENITY_WINDOW_SIZE \
+         --title="Create your new user" \
+         --text="Fill all fields with your new user information." \
+         --add-entry="User Name" \
+         --add-password="Password" \
+         --add-password="Confirm Password" \
+         --add-entry="Group Name" \
+	 --separator="|");
+
+	if [ "$USER_DATA" != "" ]; then
+		echolog_debug "$DEBUG Create new user with form data: $USER_DATA";
+		USER_NAME=$($ECHO "$USER_DATA" | $AWK -F"|" '{print $1}');
+		USER_PASSWD1=$($ECHO "$USER_DATA" | $AWK -F"|" '{print $2}' | $MD5SUM | $AWK '{print $1}');
+		USER_PASSWD2=$($ECHO "$USER_DATA" | $AWK -F"|" '{print $3}' | $MD5SUM | $AWK '{print $1}');
+		USER_GROUP=$($ECHO "$USER_DATA" | $AWK -F"|" '{print $4}');
+
+		if [ "$USER_PASSWD1" == "$USER_PASSWD2" ]; then
+			if [ ! -z "$USER_GROUP" ]; then
+				echolog_debug "$DEBUG Create new user with form data: $USER_DATA";
+				echolog_debug "$DEBUG $USERADD $USER_NAME -m -p $USER_PASSWD1 -s /bin/bash -g $USER_GROUP";
+				USERADD_CMD="$($USERADD $USER_NAME -m -p $USER_PASSWD1 -s /bin/bash -g $USER_GROUP)";
+				USERADD_CMD_CHECK=$?;
+			else
+				echolog_debug "$DEBUG Create new user with form data: $USER_DATA";
+				echolog_debug "$DEBUG $USERADD $USER_NAME -m -p $USER_PASSWD1 -s /bin/bash -U";
+				USERADD_CMD="$($USERADD $USER_NAME -m -p $USER_PASSWD1 -s /bin/bash -U)";
+				USERADD_CMD_CHECK=$?;
+			fi;
+
+			if [[ $USERADD_CMD_CHECK -eq $true ]]; then
+				echolog "$INFO Create user $USER_NAME: Your user has been added to system!\n\n$USERADD_CMD";
+				$ZENITY --info --ellipsize --text "Create user $USER_NAME: Your user has been added to system!\n\n$USERADD_CMD";
+			else
+				echolog "$INFO Create user $USER_NAME: Your user was NOT added to system!\n\n$USERADD_CMD";
+				$ZENITY --error --ellipsize --text "Create user $USER_NAME: Your user was NOT added to system!\n\n$USERADD_CMD!";
+			fi
+
+			## Finished, return to installer main menu #
+			gen_installer;
+		else
+			echolog "$ERROR Create user $USER_NAME: Passwords does NOT match!";
+			$ZENITY --error --ellipsize --text="Create user $USER_NAME: Passwords does NOT match!";
+			gen_zenity_create_user;
+		fi
+	else
+		gen_zenity_cancelled_by_user "Create user";
+	fi
+}
+
+gen_zenity_reboot() {
+	$ZENITY --question --ellipsize --text "WARNING! Are you sure that do you want to reboot?";
+	if [[ $? -eq 0 ]]; then
+		$ZENITY --info --ellipsize --text "WARNING! System is going to reboot NOW!";
+		$REBOOT;
+	else
+		gen_zenity_cancelled_by_user "Reboot";
+	fi
+}
+
+# end #

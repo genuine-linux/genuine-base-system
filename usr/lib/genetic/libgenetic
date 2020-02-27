@@ -61,8 +61,8 @@ main() {
 			help;
 		else
 			# Define $ACTION_OPTIONS #
-			ACTION_OPTIONS=$($GETOPT -o hvVBbcCdDpRu:i:l:L:U:s: \
-				 -l "help,version,verbose,silent,force,rebuildb,color,print-architecture,noarch,noscripts,autotools,purge,bootstrap,disable-gen-orig,disable-gen-source,disable-gen-debug,disable-gen-all,disable-distclean,disable-clean,uninstall:,install:,list:,listfiles:,unpack:,unpackdir:,build,source:,clean,configure-self-dir,configure:,packages:,prefix:,admindir:,instdir:" \
+			ACTION_OPTIONS=$($GETOPT -o hIvVBbcCdDpRu:i:l:L:U:s: \
+				 -l "help,version,verbose,silent,force,rebuildb,color,print-architecture,noarch,noscripts,autotools,purge,bootstrap,installer,disable-gen-orig,disable-gen-source,disable-gen-debug,disable-gen-all,disable-distclean,disable-clean,uninstall:,install:,list:,listfiles:,unpack:,unpackdir:,build,source:,clean,configure-self-dir,configure:,packages:,prefix:,admindir:,instdir:" \
 				 -n "$0" -- "$@")
 
 			eval set -- "$ACTION_OPTIONS"
@@ -115,6 +115,10 @@ main() {
 					-B|--bootstrap) # <bootstrap> Genuine System #
 						startmsg;
 						gen_bootstrap; shift; break;
+					;;
+					-I|--installer) # <gen_installer> Install Genuine System #
+						startmsg;
+						gen_installer; shift; break;
 					;;
 					--prefix) # Package configure & install <prefix> directory #
 						GEN_PKGRULES_PREFIX="$2"; shift 2;
@@ -174,7 +178,7 @@ main() {
 						# Lock genetic instance #
 						lock_instance;
 						startmsg;
-					  	INSTALL_PACKAGES="$BASH_ARGV";
+					  	INSTALL_PACKAGES="$2";
 						gen_install_packages "$INSTALL_PACKAGES"; shift 2;
 					;;
 					--purge) # Purge configuration files (/etc) #
@@ -184,7 +188,7 @@ main() {
 						# Lock genetic instance #
 						lock_instance;
 						startmsg;
-						UNINSTALL_PACKAGES="$BASH_ARGV";
+						UNINSTALL_PACKAGES="$2";
 						gen_uninstall_packages "$UNINSTALL_PACKAGES"; shift 2;
 					;;
 					-l|--list) # <list> genetic installed packages from database #

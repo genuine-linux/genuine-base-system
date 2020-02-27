@@ -36,8 +36,10 @@ load_core_variables() {
 	PING="ping";
 	NSLOOKUP="nslookup";
 	HOSTCMD="host";
+	_HOSTNAME="hostname";
 	AWK="awk";
 	SORT="sort";
+	UNIQ="uniq";
 	CAT="cat";
 	MV="mv";
 	CP="cp";
@@ -49,6 +51,7 @@ load_core_variables() {
 	CD="cd";
 	WC="wc";
 	DU="du";
+	BC="bc";
 	CHMOD="chmod";
 	TOUCH="touch";
 	TAIL="tail";
@@ -63,6 +66,10 @@ load_core_variables() {
 	MESON="meson";
 	NINJA="ninja";
 	DATE="date";
+	REBOOT="reboot";
+	HALT="halt";
+	SHUTDOWN="shutdown";
+	LOADKEYS="loadkeys";
 	TEE="tee";
 	SED="sed";
 	TAR="tar";
@@ -78,6 +85,20 @@ load_core_variables() {
 	AUTORECONF="autoreconf";
 	SETTERM="setterm";
 	UNAME="uname";
+	WHICH="which";
+	USERADD="useradd";
+	GROUPADD="groupadd";
+	ID="id";
+	MD5SUM="md5sum";
+	MKISOFS="mkisofs";
+	PASSWD="passwd";
+	FDISK="fdisk";
+	SFDISK="sfdisk";
+	CFDISK="cfdisk";
+	GRUB_INSTALL="grub-install";
+	GRUB_MKCONFIG="grub-mkconfig";
+	LSBLK="lsblk";
+	LOCALE="locale";
 	WHOAMI="whoami";
 	TRAP="trap";
 	SLEEP="sleep";
@@ -90,6 +111,7 @@ load_core_variables() {
 	GETTEXT="gettext";
   	XGETTEXT="xgettext";
   	ZENITY="zenity";
+
   	if [ -f "/usr/bin/perl" ]; then
 		PERL="/usr/bin/perl";
 	else
@@ -237,6 +259,10 @@ $INFO Bootstrap Genuine System:
 
 	${color_bwht}[-B] --bootstrap
 
+$INFO Install Genuine System:
+
+	${color_bwht}[-I] --installer
+
 $INFO Source Development Commands:
 
 	     ${color_bcyn}--noarch     ${color_cyn}'(Create <noarch> package)'
@@ -326,6 +352,10 @@ $INFO Options:
 $INFO Bootstrap Genuine System:
 
 	[-B] --bootstrap
+
+$INFO Install Genuine System:
+
+	[-I] --installer
 
 $INFO Source Development Commands:
 
