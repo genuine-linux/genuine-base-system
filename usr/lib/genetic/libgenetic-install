@@ -672,7 +672,8 @@ gen_install_binary_package() {
 	if test "$INSTDIR" != "/"; then # If --instdir is used, change CACHEDIR value
 		echolog_debug "$WARNING Warning! Changing genetic CACHEDIR to $INSTDIR$CACHEDIR!";
 		echolog "$WARNING Warning! Changing genetic CACHEDIR to $INSTDIR$CACHEDIR!";
-		CACHEDIR="$INSTDIR$CACHEDIR";
+		export CACHEDIR_ORIG="$CACHEDIR";
+		export CACHEDIR="$INSTDIR$CACHEDIR";
 	fi;
 
 	# Initialize '$CACHEDIR/$PACKAGE' data directory #
@@ -717,6 +718,8 @@ gen_install_binary_package() {
                         *) # NOT CRITICAL PACKAGES #
                                 # Delete old stored package data #
                                 gen_uninstall_packages "$Package";
+				unset _TARGET;
+				INSTDIR="/";
                         ;;
                 	esac;
 		fi;
@@ -757,8 +760,10 @@ gen_install_binary_package() {
 	gen_check_package_depends "$CACHEDIR/$Package/Info";
 
 	# Preset '$Package' before install #
-	echolog_debug "$DEBUG Executing 'PreInst' script for '$Package $Version' ($Arch) ...";
-	$CHMOD +x PreInst; $BASH PreInst &>PreInst.log;
+	if [ "$ENABLE_NOSCRIPTS" != "yes" ]; then
+		echolog_debug "$DEBUG Executing 'PreInst' script for '$Package $Version' ($Arch) ...";
+		$CHMOD +x PreInst; $BASH PreInst &>PreInst.log;
+	fi;
 
 	### Install root.tmp files (package content) ###
 	$ECHO "$INSTDIR" &>$CACHEDIR/$Package/$Package.instdir 
@@ -869,8 +874,6 @@ gen_install_binary_package() {
 		echolog_debug "$DEBUG Not found '$Package $Version' ($Arch) link index '$Package.links'.";
 	fi;
 
-	# Reset $INSTDIR #
-	if test -z "$INSTDIR"; then INSTDIR="/"; fi;
 
 	echolog_debug "$DEBUG All '$Package $Version' ($Arch) indexed files are installed to system '$INSTDIR'.";
 
@@ -883,8 +886,10 @@ gen_install_binary_package() {
 	echolog_debug "$DEBUG Starting '$Package $Version' ($Arch) 'Final Configuration'.";		
 
 	# Post install setup for '$Package' #
-	echolog_debug "$DEBUG Executing 'PostInst' script for '$Package $Version' ($Arch) ...";
-	$CHMOD +x PostInst; $BASH PostInst &>PostInst.log;
+	if [ "$ENABLE_NOSCRIPTS" != "yes" ]; then
+		echolog_debug "$DEBUG Executing 'PostInst' script for '$Package $Version' ($Arch) ...";
+		$CHMOD +x PostInst; $BASH PostInst &>PostInst.log;
+	fi;
 
 	# Delete $ROOTFS.tmp
 	echolog_debug "$DEBUG Deleting 'root.tmp' file.";
@@ -894,29 +899,43 @@ gen_install_binary_package() {
 	echolog_debug "$DEBUG Deleting 'etc' sysconfig directory.";
 	check_dir "etc" "$RM -rf etc";
 
-	# Reconfiguring 'ld' dinamic linker #
-	$LDCONFIG &>/dev/null;
+	if test "$INSTDIR" == "/"; then
+		# Reconfiguring 'ld' dinamic linker #
+		$LDCONFIG &>/dev/null;
 
-	# Update 'Shared Info Database' #
-	update_info_dir;
+		# Update 'Shared Info Database' #
+		update_info_dir;
 
-	# Update "perllocal.pod" #
-	update_perllocal_pod;
+		# Update "perllocal.pod" #
+		update_perllocal_pod;
 
-	# Update "glib-schemas" #
-	update_glib_schemas;
+		# Update "glib-schemas" #
+		update_glib_schemas;
 
-	# Update "desktop-file-utils" applications database #
-	update_desktop_database;
+		# Update "desktop-file-utils" applications database #
+		update_desktop_database;
 
-	# Update mime applications database #
-	update_mime_database;
+		# Update mime applications database #
+		update_mime_database;
 
-	# Update "fc-cache" font cache #
-	update_fc_cache;
+		# Update "fc-cache" font cache #
+		update_fc_cache;
+	else
+		$EXPORT GENETIC_PACKAGES_DB="$CACHEDIR/packages.db";
+	fi;
 
 	# Update genetic 'Installed Packages Database' #
 	update_genetic_packages_db;
+
+	# Reset $INSTDIR #
+	if test -z "$INSTDIR"; then INSTDIR="/"; fi;
+
+	# Reset $CACHEDIR
+	$UNSET CACHEDIR;
+	CACHEDIR="$CACHEDIR_ORIG";
+
+	$UNSET GENETIC_PACKAGES_DB;	
+	GENETIC_PACKAGES_DB="$CACHEDIR/packages.db";
 
 	echolog_debug "$DEBUG Finished '$Package $Version' ($Arch) 'Final Configuration'.";
 

@@ -28,6 +28,8 @@ load_core_variables() {
 
 
 	# Define '@PACKAGE' commands #
+	#GENETIC="genetic";
+	SOURCE="source";
 	ENV="env";
 	ECHO="echo -e";
 	DIRNAME="dirname";
@@ -53,7 +55,14 @@ load_core_variables() {
 	DU="du";
 	BC="bc";
 	CHMOD="chmod";
+	CHOWN="chown";
+	CHGRP="chgrp";
+	MOUNT="mount";
+	UMOUNT="umount";
 	TOUCH="touch";
+	EXPORT="export";
+	UNSET="unset";
+	SET="set";
 	TAIL="tail";
 	HEAD="head";
 	LESS="less";
@@ -61,15 +70,26 @@ load_core_variables() {
 	FIND="find";
 	STRIP="strip";
 	MKDIR="mkdir";
+	MKNOD="mknod";
+	MKINITRAMFS="mkinitramfs";
+	FC_CACHE="fc-cache";
 	MAKE="make $GEN_MAKE_OPTS";
+	INSTALL="install";
 	CMAKE="cmake";
 	MESON="meson";
 	NINJA="ninja";
 	DATE="date";
+	TIME="time";
 	REBOOT="reboot";
 	HALT="halt";
 	SHUTDOWN="shutdown";
 	LOADKEYS="loadkeys";
+	CHROOT="chroot";
+	DEPMOD="depmod";
+	MODPROBE="modprobe";
+	INSMOD="insmod";
+	MODINFO="modinfo";
+	RMMOD="rmmod";
 	TEE="tee";
 	SED="sed";
 	TAR="tar";
@@ -95,9 +115,17 @@ load_core_variables() {
 	FDISK="fdisk";
 	SFDISK="sfdisk";
 	CFDISK="cfdisk";
+	MKFS_EXT2="mkfs.ext2";
+	MKFS_EXT3="mkfs.ext3";
+	MKFS_EXT4="mkfs.ext4";
+	MKFS_XFS="mkfs.xfs";
+	MKSWAP="mkswap";
+	SWAP_ON="swapon";
+	SWAP_OFF="swapoff";
 	GRUB_INSTALL="grub-install";
 	GRUB_MKCONFIG="grub-mkconfig";
 	LSBLK="lsblk";
+	BLKID="blkid";
 	LOCALE="locale";
 	WHOAMI="whoami";
 	TRAP="trap";

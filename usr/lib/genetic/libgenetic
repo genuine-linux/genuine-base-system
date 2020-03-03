@@ -168,7 +168,7 @@ main() {
 						startmsg;
 						gen_build_package "SrcInfo"; shift;
 					;;
-					--noscripts) # Set alternative install to extract 'genetic' package <rootfs> data #
+					--noscripts) # Don't execute PostInst scripts #
 						ENABLE_NOSCRIPTS="yes"; shift;
 					;;
 					--instdir) # Set alternative install to extract 'genetic' package <rootfs> data #
@@ -178,8 +178,8 @@ main() {
 						# Lock genetic instance #
 						lock_instance;
 						startmsg;
-					  	INSTALL_PACKAGES="$2";
-						gen_install_packages "$INSTALL_PACKAGES"; shift 2;
+					  	INSTALL_PACKAGES="$2"; shift 2;
+						gen_install_packages "$INSTALL_PACKAGES";
 					;;
 					--purge) # Purge configuration files (/etc) #
 						ENABLE_PURGE="yes"; shift;

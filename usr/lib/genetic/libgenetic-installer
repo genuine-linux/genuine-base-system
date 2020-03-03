@@ -37,12 +37,10 @@ gen_installer() {
 			--title="Genuine GNU/Linux Installer Menu" \
 			--column="Genuine Installer Options" \
 			--text="Welcome to Genuine GNU/Linux Installer\n\nThis installer will guide you with all the steps of this proccess.\nPlease, BE CAREFUL because you can delete all your hard drives' data!\n" \
-			"Select Language" \
-			"Manage Disk Partitions" \
 			"Install Genuine GNU/Linux" \
-			"Install GRUB Bootloader" \
 			"Administrator Password" \
 			"System Users" \
+			"Select Language" \
 			"Date & Timezone" \
 			"Hostname" \
 			"Reboot" \
@@ -55,20 +53,8 @@ gen_installer() {
 			exit_instance $false;
 		fi;
 
-		if [ "$gen_installer_options" == "Select Language" ]; then
-    			gen_zenity_select_locale;
-		fi
-
-		if [ "$gen_installer_options" == "Manage Disk Partitions" ]; then
-    			gen_zenity_partition_manager;
-		fi
-
 		if [ "$gen_installer_options" == "Install Genuine GNU/Linux" ]; then
     			gen_zenity_install_system;
-		fi
-		
-		if [ "$gen_installer_options" == "Install GRUB Bootloader" ]; then
-    			gen_zenity_install_grub;
 		fi
 		
 		if [ "$gen_installer_options" == "Administrator Password" ]; then
@@ -79,6 +65,10 @@ gen_installer() {
     			gen_zenity_create_user;
 		fi
 
+		if [ "$gen_installer_options" == "Select Language" ]; then
+    			gen_zenity_select_locale;
+		fi
+		
 		if [ "$gen_installer_options" == "Date & Timezone" ]; then
     			gen_zenity_set_datetime;
 		fi
