@@ -1,3 +1,0 @@
-Dependencies:
-
-depend-1 >= X.XX.X | depend-2 = X.XX.X 

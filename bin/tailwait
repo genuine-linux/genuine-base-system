@@ -1,17 +1,25 @@
 #!/bin/bash
 
-# file
-f="$1";
+# Help
+if [ -z "$1" ]; then
+  echo "Help: Make tail wait for a becoming file.";
+  echo "Usage: tailwait <file> [seconds]";
+  exit 1;
+fi
 
-# wait
-w="${2:-5}";
+f="$1"; # file
 
+w="${2:-5}"; # wait
+
+# wait for file
 while : ; do
-	if [ ! -f "$f" ]; then
-		echo "Waiting $w seconds for file: $f ...";
-		sleep $w;
-		continue;
-	else
-		tail -f $f;
-	fi;
+  if [ ! -f "$f" ]; then
+    echo "Waiting $w seconds for file: $f ...";
+    sleep $w;
+    continue;
+  else
+    tail -f $f;
+  fi;
 done
+
+exit $?

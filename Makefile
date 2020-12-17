@@ -2,9 +2,13 @@
 
 INSTALL_DIR    = install -m 0755 -d
 
-all:
+SUBDIRS = src
 
-install:
+all:
+	find . -exec chown 0:0 {} \; 
+	make -C $(SUBDIRS) install
+
+install: all
 	$(INSTALL_DIR) $(DESTDIR)/etc
 	cp -pPR etc/* $(DESTDIR)/etc/
 	$(INSTALL_DIR) $(DESTDIR)/usr
